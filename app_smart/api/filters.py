@@ -16,6 +16,13 @@ from rest_framework.views import APIView
 from rest_framework import permissions
 from rest_framework.response import Response
 
+from rest_framework.pagination import LimitOffsetPagination
+
+
+class CustomPagination(LimitOffsetPagination):
+  default_limit = 10
+  max_limit = 10
+
 # Definindo filtros GET
 class SensorFilter(django_filters.FilterSet):
   # Criamos os campos que terão filtragem
@@ -33,6 +40,7 @@ class SensorFilter(django_filters.FilterSet):
 # Define os filtros POST
 class TemperaturaFilterView(APIView):
   permission_classes = [permissions.IsAuthenticated]
+  pagination_class = CustomPagination
 
   def post(self, request, *args, **kwargs):
     sensor_id = request.data.get('sensor_id', None)
@@ -57,8 +65,12 @@ class TemperaturaFilterView(APIView):
       filters &= Q(timestamp__lt = timestamp_lt)
     
     queryset = TemperaturaData.objects.filter(filters)
-    serializer = TemperaturaDataSerializer(queryset, many=True)
-    return Response(serializer.data)
+    
+    paginator = self.pagination_class() # Instanciando o paginador
+    page = paginator.paginate_queryset(queryset, request)
+    serializer = TemperaturaDataSerializer(page, many=True)
+
+    return paginator.get_paginated_response(serializer.data)
 
 # Definindo filtros GET
 class TemperaturaDataFilter(django_filters.FilterSet):
@@ -100,6 +112,7 @@ class SensorFilterView(APIView):
 
     queryset = Sensor.objects.filter(filters)
     serializer = SensorSerializer(queryset, many=True)
+    
     return Response(serializer.data)
     
     # No tipo GET deixa exposto na URL
@@ -108,6 +121,7 @@ class SensorFilterView(APIView):
 
 class UmidadeFilterView(APIView):
   permission_classes = [permissions.IsAuthenticated]
+  pagination_class = CustomPagination
 
   def post(self, request, *args, **kwargs):
     sensor_id = request.data.get('sensor_id', None)
@@ -131,12 +145,16 @@ class UmidadeFilterView(APIView):
       filters &= Q(timestamp__lt = timestamp_lt)
     
     queryset = UmidadeData.objects.filter(filters)
-    serializer = UmidadeDataSerializer(queryset, many=True)
-    return Response(serializer.data)
+    paginator = self.pagination_class() # Instanciando o paginador
+    page = paginator.paginate_queryset(queryset, request)
+    serializer = UmidadeDataSerializer(page, many=True)
+
+    return paginator.get_paginated_response(serializer.data)
     
 
 class LuminosidadeFilterView(APIView):
   permission_classes = [permissions.IsAuthenticated]
+  pagination_class = CustomPagination
 
   def post(self, request, *args, **kwargs):
     sensor_id = request.data.get('sensor_id', None)
@@ -160,13 +178,18 @@ class LuminosidadeFilterView(APIView):
       filters &= Q(timestamp__lt = timestamp_lt)
     
     queryset = LuminosidadeData.objects.filter(filters)
-    serializer = LuminosidadeDataSerializer(queryset, many=True)
-    return Response(serializer.data)
+
+    paginator = self.pagination_class() # Instanciando o paginador
+    page = paginator.paginate_queryset(queryset, request)
+    serializer = LuminosidadeDataSerializer(page, many=True)
+
+    return paginator.get_paginated_response(serializer.data)
     
     
 
 class ContadorFilterView(APIView):
   permission_classes = [permissions.IsAuthenticated]
+  pagination_class = CustomPagination
 
   def post(self, request, *args, **kwargs):
     sensor_id = request.data.get('sensor_id', None)
@@ -184,11 +207,15 @@ class ContadorFilterView(APIView):
     
     queryset = ContadorData.objects.filter(filters)
     count = queryset.count()
-    serializer = ContadorDataSerializer(queryset, many=True)
+    paginator = self.pagination_class()  # Instanciando a classe de paginação
+    page = paginator.paginate_queryset(queryset, request)
+    serializer = ContadorDataSerializer(page, many=True)
+
     response_data = {
-      'count': count,
-      'result': serializer.data
+        'count': count,
+        'result': serializer.data
     }
-    return Response(response_data)
+
+    return paginator.get_paginated_response(response_data)
     
     
